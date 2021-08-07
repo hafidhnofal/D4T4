@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Music Recommender System</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+* {
+  box-sizing: border-box;
+}
+
+/* Create three equal columns that floats next to each other */
+.column {
+  float: left;
+  width: 33.33%;
+  padding: 17px;
+  height: 500px; /* Should be removed. Only for demonstration */
+}
+
+/* Clear floats after the columns */
+.row:after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+/* Responsive layout - makes the three columns stack on top of each other instead of next to each other */
+@media screen and (max-width: 600px) {
+  .column {
+    width: 100%;
+  }
+}
+textarea {
+	resize: none;
+}
+body{
+	background-color:#1B4F72;
+}
+.list-group-item {
+    padding: 3px 10px
+}
+
+.tooltip {
+  position: relative;
+  display: inline-block;
+}
+
+.tooltip .tooltiptext {
+  visibility: hidden;
+  width: 140px;
+  background-color: #555;
+  color: #fff;
+  text-align: center;
+  border-radius: 6px;
+  padding: 5px;
+  position: absolute;
+  z-index: 1;
+  bottom: 150%;
+  left: 50%;
+  margin-left: -75px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.tooltip .tooltiptext::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: #555 transparent transparent transparent;
+}
+
+.tooltip:hover .tooltiptext {
+  visibility: visible;
+  opacity: 1;
+}
+
+</style>
+</head>
+<body>
+
+<h2 style="background-color:#1B4F72;color: white;text-align: center;">Music Recommender System</h2>
+
+<div class="row" >
+<form action="rekom" method="GET">
+  <div class="column" style="background-color:#D6EAF8;border-radius: 25px;">
+    <h3>Input Lyric</h3>
+	<p style="color: gray;">lyrics Input must be more than 20 words and use English.</p>
+	<textarea class="form-control" id="exampleFormControlTextarea1" name="txtlyric" rows="11" cols="50" placeholder="Input your Lyrics" value="">{{input_lyric}}</textarea>
+	<input type="button" value="Clear Text" class="btn btn-primary" onclick="javascript:eraseText();"> 
+  
+  </div>
+  
+  <div class="column" style="background-color:#AED6F1;border-radius: 25px;">
+    <h3>Input Criteria</h3>
+	<p style="color: gray;">The value of criteria in the form numbers (0-1, step = 0.01) may be more than 1 criteria used.</p>
+	<div style="width: 50%; float:left; padding: 10px 0 0 30px;">
+	<input class="input" type="range" min="0" max="1" value="{{ro}}" step="0.01" class="slider" id="myRange_ro" name="myRange_ro">
+	<p>Romantic: <span id="demo_ro" value="{{ro}}"></span></p>
+
+	<input class="input" type="range" min="0" max="1" value="{{co}}" step="0.01" class="slider" id="myRange_co" name="myRange_co">
+	<p>Communication: <span id="demo_co" value="{{co}}"></span></p>
+
+	<input class="input" type="range" min="0" max="1" value="{{sp}}" step="0.01" class="slider" id="myRange_sp" name="myRange_sp">
+	<p>Spiritual: <span id="demo_sp" value="{{sp}}"></span></p>
+
+	<input class="input" type="range" min="0" max="1" value="{{sa}}" step="0.01" class="slider" id="myRange_sa" name="myRange_sa">
+	<p>Sadnees: <span id="demo_sa" value="{{sa}}"></span></p>
+	
+	<input type="button" value="Reset Criteria" class="btn btn-primary" onclick="javascript:resetCriteria();"> 
+</div>
+<div style="width: 50%; float:right; padding: 10px 0 0 30px">
+	<input class="input" type="range" min="0" max="1" value="{{fe}}" step="0.01" class="slider" id="myRange_fe" name="myRange_fe">
+	<p>Feelings: <span id="demo_fe" value="{{fe}}"></span></p>
+
+	<input class="input" type="range" min="0" max="1" value="{{da}}" step="0.01" class="slider" id="myRange_da" name="myRange_da">
+	<p>Danceability: <span id="demo_da" value="{{da}}"></span></p>
+	
+	<input class="input" type="range" min="0" max="1" value="{{va}}" step="0.01" class="slider" id="myRange_va" name="myRange_va">
+	<p>Valence: <span id="demo_va" value="{{va}}"></span></p>
+	
+	<input class="input" type="range" min="0" max="1" value="{{en}}" step="0.01" class="slider" id="myRange_en" name="myRange_en">
+	<p>Energy: <span id="demo_en" value="{{en}}"></span></p>
+	<br>
+	<div class="field">
+		<button class="btn btn-success">Recommended</button>
+    </div>
+</div>
+  </div>
+  <div class="column" style="background-color:#85C1E9;border-radius: 25px;">
+    <h2>Recommended</h2>
+	<p style="color: gray;">To display the recommended results, you must enter English lyrics and use at least 1 music criteria.</p>
+        <b>( Artist - Tittle )</b>
+         <ol class="list-group list-group-numbered" style="padding: 5px 7px 0 10px">
+         {% for item in result %}
+             <li class="list-group-item">{{item}}</li>
+         {% endfor %}
+         </ol>
+  </div>
+  </form>
+</div>
+<script>
+	var slider_ro = document.getElementById("myRange_ro");
+	var output_ro = document.getElementById("demo_ro");
+	output_ro.innerHTML = slider_ro.value;
+
+	slider_ro.oninput = function() {
+	  output_ro.innerHTML = this.value;
+	}
+	
+	var slider_co = document.getElementById("myRange_co");
+	var output_co = document.getElementById("demo_co");
+	output_co.innerHTML = slider_co.value;
+
+	slider_co.oninput = function() {
+	  output_co.innerHTML = this.value;
+	}
+	
+	var slider_sp = document.getElementById("myRange_sp");
+	var output_sp = document.getElementById("demo_sp");
+	output_sp.innerHTML = slider_sp.value;
+
+	slider_sp.oninput = function() {
+	  output_sp.innerHTML = this.value;
+	}
+	
+	var slider_sa = document.getElementById("myRange_sa");
+	var output_sa = document.getElementById("demo_sa");
+	output_sa.innerHTML = slider_sa.value;
+
+	slider_sa.oninput = function() {
+	  output_sa.innerHTML = this.value;
+	}
+	
+	var slider_fe = document.getElementById("myRange_fe");
+	var output_fe = document.getElementById("demo_fe");
+	output_fe.innerHTML = slider_fe.value;
+
+	slider_fe.oninput = function() {
+	  output_fe.innerHTML = this.value;
+	}
+	
+	var slider_da = document.getElementById("myRange_da");
+	var output_da = document.getElementById("demo_da");
+	output_da.innerHTML = slider_da.value;
+
+	slider_da.oninput = function() {
+	  output_da.innerHTML = this.value;
+	}
+	
+	var slider_va = document.getElementById("myRange_va");
+	var output_va = document.getElementById("demo_va");
+	output_va.innerHTML = slider_va.value;
+
+	slider_va.oninput = function() {
+	  output_va.innerHTML = this.value;
+	}
+	
+	var slider_en = document.getElementById("myRange_en");
+	var output_en = document.getElementById("demo_en");
+	output_en.innerHTML = slider_en.value;
+
+	slider_en.oninput = function() {
+	  output_en.innerHTML = this.value;
+	}
+	function eraseText() {
+		document.getElementById("exampleFormControlTextarea1").value = "";
+	}
+	function resetCriteria() {
+		document.getElementById("myRange_ro").value = 0;
+		output_ro.innerHTML = 0;
+		
+		document.getElementById("myRange_co").value = 0;
+		output_co.innerHTML = 0;
+		
+		document.getElementById("myRange_sp").value = 0;
+		output_sp.innerHTML = 0;
+		
+		document.getElementById("myRange_sa").value = 0;
+		output_sa.innerHTML = 0;
+		
+		document.getElementById("myRange_da").value = 0;
+		output_da.innerHTML = 0;
+		
+		document.getElementById("myRange_fe").value = 0;
+		output_fe.innerHTML = 0;
+		
+		document.getElementById("myRange_va").value = 0;
+		output_va.innerHTML = 0;
+		
+		document.getElementById("myRange_en").value = 0;
+		output_en.innerHTML = 0;
+	}
+</script>
+</body>
+</html>
